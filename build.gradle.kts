@@ -21,6 +21,9 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.11")
     implementation("org.eclipse.jgit:org.eclipse.jgit:5.13.2.202306221912-r")
     implementation("com.github.pagehelper:pagehelper:6.0.0")
+    implementation("org.freemarker:freemarker:2.3.32")
+    implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
+
 }
 
 intellij {
