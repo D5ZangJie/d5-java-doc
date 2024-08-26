@@ -13,11 +13,13 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiMethod
 import com.ly.doc.builder.ApiDataBuilder
 import com.ly.doc.constants.FrameworkEnum
+import com.ly.doc.constants.TemplateVariable
 import com.ly.doc.model.ApiAllData
 import com.ly.doc.model.ApiConfig
 import com.ly.doc.model.SourceCodePath
 import freemarker.template.Configuration
 import freemarker.template.Template
+import freemarker.template.TemplateNotFoundException
 import java.awt.BorderLayout
 import java.io.StringWriter
 import javax.swing.Icon
@@ -55,8 +57,9 @@ class MyGutterIconProvider : LineMarkerProvider {
 
     private fun showApiDataPopup(project: Project, method: PsiMethod) {
         val config = buildApiConfig(method)
-        val apiData = ApiDataBuilder.getApiData(config)
-        val renderedMarkdown = renderApiData(apiData)
+
+        val apiData = ApiDataBuilder.getApiDataTree(config)
+        val renderedMarkdown = renderApiData(apiData, config)
         val htmlContent = convertMarkdownToHtml(renderedMarkdown)
 
         val editorPane = JEditorPane("text/html", htmlContent)
@@ -71,6 +74,8 @@ class MyGutterIconProvider : LineMarkerProvider {
                 .setTitle("API Documentation")
                 .setResizable(true)
                 .setMovable(true)
+                .setRequestFocus(true)
+                .setMinSize(java.awt.Dimension(100, 150)) // 设置初始大小
                 .createPopup()
 
         // 获取当前方法所在文件的 Editor
@@ -105,16 +110,22 @@ class MyGutterIconProvider : LineMarkerProvider {
         return config
     }
 
-    private fun renderApiData(apiData: ApiAllData): String {
+    private fun renderApiData(apiData: ApiAllData, apiConfig: ApiConfig): String {
         val config = Configuration(Configuration.VERSION_2_3_32)
-        config.setClassForTemplateLoading(this::class.java, "template")
+        val templateStream = this::class.java.classLoader.getResourceAsStream("template/ApiMethodDoc.ftl")
+                ?: throw TemplateNotFoundException("Template not found: template/ApiMethodDoc.ftl", "ApiMethodDoc.ftl", null)
 
-        val template: Template = config.getTemplate("ApiDoc.md")
-
+        val templateReader = templateStream.reader()
+        val template = Template("ApiMethodDoc.ftl", templateReader, config)
+        val apiDoc = apiData.apiDocList[0];
         val templateData = mapOf(
-                "desc" to apiData.projectName,
-                "list" to apiData.apiDocList
+                TemplateVariable.DESC.variable to apiDoc.desc,
+                TemplateVariable.NAME.variable to apiDoc.name,
+                TemplateVariable.LIST.variable to apiDoc.list,
+                TemplateVariable.REQUEST_EXAMPLE.variable to apiConfig.isRequestExample,
+                TemplateVariable.RESPONSE_EXAMPLE.variable to apiConfig.isResponseExample
         )
+
 
         val writer = StringWriter()
         template.process(templateData, writer)

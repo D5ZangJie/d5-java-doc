@@ -20,10 +20,14 @@
  */
 package com.ly.doc.builder;
 
+import com.ly.doc.constants.DocGlobalConstants;
 import com.ly.doc.helper.JavaProjectBuilderHelper;
 import com.ly.doc.model.ApiAllData;
 import com.ly.doc.model.ApiConfig;
+import com.ly.doc.model.ApiDoc;
 import com.thoughtworks.qdox.JavaProjectBuilder;
+import java.util.List;
+import org.beetl.core.Template;
 
 /**
  * @author yu 2019/12/7.
@@ -57,5 +61,18 @@ public class ApiDataBuilder {
         builderTemplate.checkAndInitForGetApiData(config);
         JavaProjectBuilder javaProjectBuilder = JavaProjectBuilderHelper.create();
         return builderTemplate.getApiData(config, javaProjectBuilder);
+    }
+
+    private static String getApiDataStr(ApiConfig config, boolean toTree) {
+        config.setParamsDataToTree(toTree);
+        DocBuilderTemplate builderTemplate = new DocBuilderTemplate();
+        builderTemplate.checkAndInitForGetApiData(config);
+        JavaProjectBuilder javaProjectBuilder = JavaProjectBuilderHelper.create();
+        ApiAllData apiData = builderTemplate.getApiData(config, javaProjectBuilder);
+        List<ApiDoc> apiDocList = apiData.getApiDocList();
+        Template template = builderTemplate.buildApiDocTemplate(apiDocList.get(0),
+                                                                config,
+                                                                DocGlobalConstants.API_DOC_MD_TPL);
+        return template.render();
     }
 }
